@@ -1,2 +1,10 @@
-#Folders
-env/
+# Gitignore File
+
+# Folders
+.vscode
+build/
+
+# Files
+*.o
+exemple.c
+discord_rp_mpris
