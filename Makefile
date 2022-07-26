@@ -1,16 +1,15 @@
 ##
 ## File: Makefile
 ## Project: discord-rp-mpris
-## File Created: Thursday, 9th June 2022 1:01:11 pm
+## File Created: 9th June 2022
 ## Author: Parumezan
-## -----
-## Last Modified: Thursday, 9th June 2022 2:24:10 pm
-## Modified By: Parumezan
-## -----
-## Copyright JB 2022
+## Copyright (c) 2022 JB
 ##
 
 SRC =	\
+		src/tools.c		\
+		src/mpris.c		\
+		src/memory.c	\
 		src/main.c
 
 BUILD_DIR = build
@@ -35,8 +34,9 @@ $(BUILD_DIR)/%.o: %.c
 $(OUTPUT): $(OBJ)
 	$(CC) -o $(OUTPUT) $(OBJ) $(CFLAGS) $(LDFLAGS)
 
-debug: CFLAGS += -g
-debug: fclean all
+debug: CFLAGS += -fsanitize=address,leak,undefined -g3
+debug: LDFLAGS += -lasan -fsanitize=address,leak,undefined
+debug: re
 
 clean:
 	rm -fr $(BUILD_DIR)

@@ -1,26 +1,35 @@
 /*
 ** File: main.c
 ** Project: src
-** File Created: Thursday, 9th June 2022 1:01:11 pm
+** File Created: 9th June 2022
 ** Author: Parumezan
-** -----
-** Last Modified: Thursday, 9th June 2022 1:18:13 pm
-** Modified By: Parumezan
-** -----
-** Copyright JB 2022
+** Copyright (c) 2022 JB
 */
 
-#include "discord_mpris.h"
+#include "discord_rp_mpris.h"
 
-int main()
+discord_rp_mpris_t *general = NULL;
+
+void sig_handler(int sig)
 {
-    GError *error = NULL;
-    GList *players = playerctl_list_players(error);
-
-    // print the list of players
-    for (GList *l = players; l != NULL; l = l->next)
-    {
-        g_print("%s\n", (char *)l->data);
+    if (sig == SIGINT || sig == SIGTERM) {
+		free_general(general);
+        exit(0);
     }
-    return 0;
+}
+
+int main(void)
+{
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
+	general = init_general();
+	if (general == NULL) {
+		fprintf(stderr, "Error: failed to initialize discord_rp_mpris struct\n");
+		return 1;
+	}
+	if (refresh_mpris_data(general) != 0)
+		return 1;
+	display_player_data(general->player_data);
+	free_general(general);
+	return 0;
 }
