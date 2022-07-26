@@ -26,12 +26,27 @@ static playerdata_t *get_player_data(PlayerctlPlayerName *player_name)
 	g_object_get(player, "playback-status", &data->status, NULL);
 	if (data->status != PLAYERCTL_PLAYBACK_STATUS_STOPPED) {
 		if ((data->title = g_strdup(playerctl_player_get_title(player, &error))) == NULL)
-			g_printerr("%s\n", error->message);
+			fprintf(stderr, "Error: failed to get title\n");
 		if ((data->artist = g_strdup(playerctl_player_get_artist(player, &error))) == NULL)
-			g_printerr("%s\n", error->message);
+			fprintf(stderr, "Error: failed to get artist\n");
 		if ((data->album = g_strdup(playerctl_player_get_album(player, &error))) == NULL)
-			g_printerr("%s\n", error->message);
-		data->position = playerctl_player_get_position(player, &error);
+			fprintf(stderr, "Error: failed to get album\n");
+
+		/*
+		GVariant *metadata = NULL;
+		g_object_get(player, "metadata", &metadata, NULL);
+		if (metadata != NULL) {
+			GVariant *length = g_variant_lookup_value(metadata, "mpris:length", G_VARIANT_TYPE_UINT64);
+			if (length == NULL)
+				fprintf(stderr, "Error: failed to get length\n");
+			else {
+				printf("Length: %ld\n", g_variant_get_uint64(length));
+				data->length = g_variant_get_uint64(length);
+				g_variant_unref(length);
+			}
+			g_variant_unref(metadata);
+		}
+		*/
 	}
 	return data;
 }

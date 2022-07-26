@@ -22,7 +22,7 @@ typedef struct playerdata_s {
     gchar *title;
     gchar *artist;
     gchar *album;
-    guint position;
+    guint length;
 } playerdata_t;
 
 typedef struct discord_rp_mpris_s {

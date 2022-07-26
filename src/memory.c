@@ -38,7 +38,7 @@ playerdata_t *init_playerdata(void)
     player->title = NULL;
     player->artist = NULL;
     player->album = NULL;
-    player->position = 0;
+    player->length = 0;
     return player;
 }
 
