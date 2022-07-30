@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include <playerctl.h>
 #include "discord_rpc.h"
 

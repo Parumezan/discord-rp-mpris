@@ -38,6 +38,8 @@ void init_discord_rpc(void)
 void update_status(discord_rp_mpris_t *general)
 {
     DiscordRichPresence discordPresence;
+    char *details = NULL;
+
     memset(&discordPresence, 0, sizeof(discordPresence));
     discordPresence.largeImageKey = general->large_icons[general->icon_index];
     switch (general->player_data->status) {
@@ -50,9 +52,15 @@ void update_status(discord_rp_mpris_t *general)
         default: discordPresence.smallImageKey = "stop";
             break;
     }
-    discordPresence.details = general->player_data->title;
+    details = malloc(sizeof(char) * (strlen(general->player_data->title)
+    + strlen(general->player_data->album) + 4));
+    if (details == NULL)
+        return;
+    sprintf(details, "%s | %s", general->player_data->title, general->player_data->album);
+    discordPresence.details = details;
     discordPresence.state = general->player_data->artist;
     Discord_UpdatePresence(&discordPresence);
+    free(details);
 }
 
 void free_discord_rpc(void)
