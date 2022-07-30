@@ -27,5 +27,4 @@ void display_player_data(playerdata_t *data)
     printf("Title: %s\n", data->title);
     printf("Artist: %s\n", data->artist);
     printf("Album: %s\n", data->album);
-    printf("Length: %d\n", data->length);
 }

@@ -9,6 +9,7 @@
 SRC =	\
 		src/tools.c		\
 		src/mpris.c		\
+		src/discord.c	\
 		src/memory.c	\
 		src/main.c
 
@@ -21,7 +22,7 @@ OUTPUT = discord_rp_mpris
 
 ## Flags
 CFLAGS = -I include/ -Wall -Wextra `pkg-config playerctl --cflags`
-LDFLAGS = -L ./lib/ -l:discord_game_sdk.so `pkg-config playerctl --libs`
+LDFLAGS = -L ./lib/ -l:libdiscord-rpc.so `pkg-config playerctl --libs`
 
 ## Rules
 all: $(OUTPUT)

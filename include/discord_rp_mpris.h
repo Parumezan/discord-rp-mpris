@@ -14,20 +14,27 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 #include <playerctl.h>
+#include "discord_rpc.h"
+
+#define MAX_ICONS 7
 
 typedef struct playerdata_s {
-    gchar *player_name;
+    char *player_name;
     PlayerctlPlaybackStatus status;
-    gchar *title;
-    gchar *artist;
-    gchar *album;
-    guint length;
+    char *title;
+    char *artist;
+    char *album;
 } playerdata_t;
 
 typedef struct discord_rp_mpris_s {
-    gchar *actual_player;
+    bool activity;
+    char *actual_player;
     playerdata_t *player_data;
+    char **large_icons;
+    int icon_index;
+    char *last_song;
 } discord_rp_mpris_t;
 
 // src
@@ -42,5 +49,10 @@ typedef struct discord_rp_mpris_s {
         void free_general(discord_rp_mpris_t *general);
         playerdata_t *init_playerdata(void);
         void free_playerdata(playerdata_t *player);
+
+    // discord.c
+        void init_discord_rpc(void);
+        void update_status(discord_rp_mpris_t *general);
+        void free_discord_rpc(void);
 
 #endif /* !DISCORD_RP_MPRIS_H_ */

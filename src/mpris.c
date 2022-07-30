@@ -8,7 +8,7 @@
 
 #include "discord_rp_mpris.h"
 
-static playerdata_t *get_player_data(PlayerctlPlayerName *player_name)
+static playerdata_t *get_player_data(discord_rp_mpris_t *general, PlayerctlPlayerName *player_name)
 {
 	GError *error = NULL;
 	PlayerctlPlayer *player = NULL;
@@ -21,41 +21,38 @@ static playerdata_t *get_player_data(PlayerctlPlayerName *player_name)
 		g_printerr("%s\n", error->message);
 		return NULL;
 	}
-	if (data->player_name == NULL)
-		data->player_name = g_strdup(player_name->name);
+	data->player_name = strdup(player_name->name);
 	g_object_get(player, "playback-status", &data->status, NULL);
 	if (data->status != PLAYERCTL_PLAYBACK_STATUS_STOPPED) {
-		if ((data->title = g_strdup(playerctl_player_get_title(player, &error))) == NULL)
+		if ((data->title = strdup(playerctl_player_get_title(player, &error))) == NULL)
 			fprintf(stderr, "Error: failed to get title\n");
-		if ((data->artist = g_strdup(playerctl_player_get_artist(player, &error))) == NULL)
+		if ((data->artist = strdup(playerctl_player_get_artist(player, &error))) == NULL)
 			fprintf(stderr, "Error: failed to get artist\n");
-		if ((data->album = g_strdup(playerctl_player_get_album(player, &error))) == NULL)
+		if ((data->album = strdup(playerctl_player_get_album(player, &error))) == NULL)
 			fprintf(stderr, "Error: failed to get album\n");
-
-		/*
-		GVariant *metadata = NULL;
-		g_object_get(player, "metadata", &metadata, NULL);
-		if (metadata != NULL) {
-			GVariant *length = g_variant_lookup_value(metadata, "mpris:length", G_VARIANT_TYPE_UINT64);
-			if (length == NULL)
-				fprintf(stderr, "Error: failed to get length\n");
-			else {
-				printf("Length: %ld\n", g_variant_get_uint64(length));
-				data->length = g_variant_get_uint64(length);
-				g_variant_unref(length);
+		if (general->last_song == NULL) {
+			general->last_song = strdup(data->title);
+			general->icon_index = rand() % (MAX_ICONS - 1);
+		} else {
+			if (strcmp(general->last_song, data->title) != 0) {
+				free(general->last_song);
+				general->last_song = strdup(data->title);
+				general->icon_index = rand() % (MAX_ICONS - 1);
 			}
-			g_variant_unref(metadata);
 		}
-		*/
 	}
+	g_object_unref(player);
 	return data;
 }
 
 static int remove_player_data(discord_rp_mpris_t *general)
 {
-	free_playerdata(general->player_data);
+	if (general->player_data != NULL) {
+		free_playerdata(general->player_data);
+		general->player_data = NULL;
+	}
 	if (general->actual_player != NULL) {
-		g_free(general->actual_player);
+		free(general->actual_player);
 		general->actual_player = NULL;
 	}
 	return 0;
@@ -68,44 +65,60 @@ static int parse_players(discord_rp_mpris_t *general, GList *list, guint length)
 
 	for (guint cpt = 0; cpt < length; cpt++) {
 		player_name = g_list_nth_data(list, cpt);
-		data = get_player_data(player_name);
-		if (data->status != PLAYERCTL_PLAYBACK_STATUS_STOPPED) {
-			general->actual_player = g_strdup(player_name->name);
+		data = get_player_data(general, player_name);
+		if (data->status == PLAYERCTL_PLAYBACK_STATUS_PLAYING) {
+			general->actual_player = strdup(player_name->name);
 			general->player_data = data;
+			general->activity = true;
 			return 0;
 		}
 		free_playerdata(data);
 	}
 	player_name = g_list_nth_data(list, 0);
-	general->player_data = get_player_data(player_name);
-	general->actual_player = g_strdup(player_name->name);
+	general->actual_player = strdup(player_name->name);
+	general->player_data = get_player_data(general, player_name);
+	general->activity = true;
 	return 0;
+}
+
+static int get_pos_find_player(discord_rp_mpris_t *general, GList *list, guint length)
+{
+	PlayerctlPlayerName *player_name = NULL;
+
+	for (guint cpt = 0; cpt < length; cpt++) {
+		player_name = g_list_nth_data(list, cpt);
+		if (g_strcmp0(general->actual_player, player_name->name) == 0) {
+			return cpt;
+		}
+	}
+	return -1;
 }
 
 int refresh_mpris_data(discord_rp_mpris_t *general)
 {
 	GError *error = NULL;
 	GList *list = playerctl_list_players(&error);
-	GList *check = NULL;
 	guint length = g_list_length(list);
 	PlayerctlPlayerName *player_name = NULL;
+	int check = -1;
 
 	if (error != NULL) {
 		g_printerr("%s\n", error->message);
 		return 1;
 	}
-	if (length == 0)
+	if (length == 0) {
+		general->activity = false;
+		Discord_ClearPresence();
 		return remove_player_data(general);
+	}
 	if (general->actual_player != NULL) {
-		if ((check = g_list_find_custom(list, general->actual_player,
-		(GCompareFunc)g_strcmp0)) != NULL) {
-			player_name = g_list_nth_data(list, g_list_position(list, check));
+		if ((check = get_pos_find_player(general, list, length)) != -1) {
+			player_name = g_list_nth_data(list, check);
 			free_playerdata(general->player_data);
-			general->player_data = get_player_data(player_name);
+			general->player_data = get_player_data(general, player_name);
 			return 0;
 		}
 		remove_player_data(general);
 	}
-	remove_player_data(general);
 	return parse_players(general, list, length);
 }
